@@ -1,0 +1,9 @@
+*.qcow2
+*.raw
+*.iso
+*.pem
+*.hcl
+*.tfstate*
+.terraform
+state
+*.html
