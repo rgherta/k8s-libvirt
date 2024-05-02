@@ -1,92 +1,92 @@
 ---
-# - name: Install Control Plane
-#   hosts: control_plane
-#   become: yes
-#   vars:
-#     podCIDR: "192.168.32.0/24"
-#     svcCIDR: "172.16.32.0/24"
-#     vm_hostname: "control-plane-{{ ansible_host | replace('.', '-') }}"
-#     control_plane_endpoint: "{{ hostvars[groups['control_plane'][0]]['ansible_host'] }}"
-#   tasks:
+- name: Install Control Plane
+  hosts: control_plane
+  become: yes
+  vars:
+    podCIDR: "192.168.32.0/24"
+    svcCIDR: "172.16.32.0/24"
+    vm_hostname: "control-plane-{{ ansible_host | replace('.', '-') }}"
+    control_plane_endpoint: "{{ hostvars[groups['control_plane'][0]]['ansible_host'] }}"
+  tasks:
 
-#     - name: Set hostname
-#       command: "hostnamectl set-hostname {{ vm_hostname }}"
+    - name: Set hostname
+      command: "hostnamectl set-hostname {{ vm_hostname }}"
 
-#     - name: Upload kubeadmin-config file
-#       template:
-#         src: files/kubeadm-config.yml.j2
-#         dest: /home/{{ansible_user}}/kubeadm-config.yaml
-#         mode: '0640'
-#         owner: "{{ansible_user}}"
-#         group: "{{ansible_user}}"
+    - name: Upload kubeadmin-config file
+      template:
+        src: files/kubeadm-config.yml.j2
+        dest: /home/{{ansible_user}}/kubeadm-config.yaml
+        mode: '0640'
+        owner: "{{ansible_user}}"
+        group: "{{ansible_user}}"
 
-#     - name: Pull kubernetes images
-#       command: "kubeadm config images pull"
+    - name: Pull kubernetes images
+      command: "kubeadm config images pull"
 
-#     - name: Run kubeadm
-#       command: "kubeadm init --skip-token-print=true --config=/home/{{ansible_user}}/kubeadm-config.yaml"
+    - name: Run kubeadm
+      command: "kubeadm init --skip-token-print=true --config=/home/{{ansible_user}}/kubeadm-config.yaml"
 
-#     - name: Post install
-#       command: "{{ item }}"
-#       with_items:
-#         - "mkdir -p $HOME/.kube"
-#         - "cp /etc/kubernetes/admin.conf $HOME/.kube/config"
-#         - "chown maintainer:maintainer $HOME/.kube/config"
+    - name: Post install
+      command: "{{ item }}"
+      with_items:
+        - "mkdir -p $HOME/.kube"
+        - "cp /etc/kubernetes/admin.conf $HOME/.kube/config"
+        - "chown maintainer:maintainer $HOME/.kube/config"
   
-#       # kubectl set env daemonset/calico-node -n kube-system CALICO_IPV4POOL_CIDR="192.168.32.0/24" doesnt seem to work
-#     - name: Install networking plugin calico 
-#       command: "{{ item }}"
-#       with_items:
-#         - "curl https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/calico.yaml -O"
-#         #- 'sed -i -E "s/# - name: CALICO_IPV4POOL_CIDR/- name: CALICO_IPV4POOL_CIDR /g" calico.yaml'
-#         #- "sed -i '/192.168.0.0/a \\              value: \"{{ podCIDR }}\"' calico.yaml"
-#         - "kubectl apply -f calico.yaml"
-#         - 'kubectl -n kube-system set env daemonset/calico-node --containers="calico-node" CALICO_IPV4POOL_CIDR="{{ podCIDR }}"'
-#         - "sleep 1m"
+      # kubectl set env daemonset/calico-node -n kube-system CALICO_IPV4POOL_CIDR="192.168.32.0/24" doesnt seem to work
+    - name: Install networking plugin calico 
+      command: "{{ item }}"
+      with_items:
+        - "curl https://raw.githubusercontent.com/projectcalico/calico/v3.27.3/manifests/calico.yaml -O"
+        #- 'sed -i -E "s/# - name: CALICO_IPV4POOL_CIDR/- name: CALICO_IPV4POOL_CIDR /g" calico.yaml'
+        #- "sed -i '/192.168.0.0/a \\              value: \"{{ podCIDR }}\"' calico.yaml"
+        - "kubectl apply -f calico.yaml"
+        - 'kubectl -n kube-system set env daemonset/calico-node --containers="calico-node" CALICO_IPV4POOL_CIDR="{{ podCIDR }}"'
+        - "sleep 1m"
 
 
-#     - name: Wait for the control plane to become ready 
-#       command: kubectl wait  --for='jsonpath={.status.conditions[?(@.type=="Ready")].status}=True' --timeout=10m pod --all -n kube-system
+    - name: Wait for the control plane to become ready 
+      command: kubectl wait  --for='jsonpath={.status.conditions[?(@.type=="Ready")].status}=True' --timeout=10m pod --all -n kube-system
 
-#     - name: Obtain temporary token
-#       command: kubeadm token create --ttl=30m
-#       register: kubeadm_token
+    - name: Obtain temporary token
+      command: kubeadm token create --ttl=30m
+      register: kubeadm_token
 
-#     - name: Execute command to get CA hash
-#       shell: kubeadm token create --ttl=1s --print-join-command | awk '{print $NF}'
-#       register: ca_hash_result
+    - name: Execute command to get CA hash
+      shell: kubeadm token create --ttl=1s --print-join-command | awk '{print $NF}'
+      register: ca_hash_result
 
-#     - name: Set variable
-#       set_fact:
-#         cahash: "{{ ca_hash_result.stdout }}"
-#         kubeadm_token: "{{kubeadm_token.stdout}}"
+    - name: Set variable
+      set_fact:
+        cahash: "{{ ca_hash_result.stdout }}"
+        kubeadm_token: "{{kubeadm_token.stdout}}"
 
 
 
-# - name: Data Plane Setup
-#   hosts: data_plane
-#   become: yes
-#   vars:
-#     cahash: "{{ hostvars[groups['control_plane'][0]]['cahash'] }}"
-#     kubeadm_token: "{{ hostvars[groups['control_plane'][0]]['kubeadm_token']  }}"
-#     vm_hostname: "data-plane-{{ ansible_host | replace('.', '-') }}"
-#     control_plane_endpoint: "{{ hostvars[groups['control_plane'][0]]['ansible_host'] }}"
+- name: Data Plane Setup
+  hosts: data_plane
+  become: yes
+  vars:
+    cahash: "{{ hostvars[groups['control_plane'][0]]['cahash'] }}"
+    kubeadm_token: "{{ hostvars[groups['control_plane'][0]]['kubeadm_token']  }}"
+    vm_hostname: "data-plane-{{ ansible_host | replace('.', '-') }}"
+    control_plane_endpoint: "{{ hostvars[groups['control_plane'][0]]['ansible_host'] }}"
 
-#   tasks:
+  tasks:
 
-#     - name: Set hostname
-#       command: "hostnamectl set-hostname {{ vm_hostname }}"
+    - name: Set hostname
+      command: "hostnamectl set-hostname {{ vm_hostname }}"
 
-#     - name: Upload kubeadm-join file
-#       template:
-#         src: files/kubeadm-join.yml.j2
-#         dest: /home/{{ansible_user}}/kubeadm-join.yaml
-#         mode: '0640'
-#         owner: "{{ansible_user}}"
-#         group: "{{ansible_user}}"
+    - name: Upload kubeadm-join file
+      template:
+        src: files/kubeadm-join.yml.j2
+        dest: /home/{{ansible_user}}/kubeadm-join.yaml
+        mode: '0640'
+        owner: "{{ansible_user}}"
+        group: "{{ansible_user}}"
 
-#     - name: Join node
-#       command: "kubeadm join --config=/home/{{ansible_user}}/kubeadm-join.yaml"
+    - name: Join node
+      command: "kubeadm join --config=/home/{{ansible_user}}/kubeadm-join.yaml"
 
 
 
@@ -105,3 +105,16 @@
         src: /tmp/oscap-report.html
         dest: ./scans/oscap-report-{{ ansible_host }}-{{ ansible_date_time.epoch }}.html
         flat: yes
+
+
+- name: Storage handling
+  hosts: all
+  become: yes
+  
+  tasks:
+
+    - name: According to infra scripts, libvirt provisioned an extra disk /dev/sdb
+      command: "{{ item }}"
+      with_items:
+        - "pvcreate /dev/sdb"
+        - "vgcreate lvmvg /dev/sdb"
