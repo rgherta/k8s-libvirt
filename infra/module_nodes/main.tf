@@ -29,17 +29,25 @@ resource "libvirt_network" "subnet" {
 
 }
 
+resource "libvirt_pool" "cluster" {
+  name = "cluster"
+  type = "dir"
+  path = "pool"
+}
+
 resource "libvirt_volume" "root" {
   count = var.nbr_nodes
   name        = "root${count.index}-${var.node_type}"
   source      = "${path.module}/img/fedora40-${var.node_type}.qcow2"
   format      = "qcow2"
+  pool   = libvirt_pool.cluster.name
   depends_on = [null_resource.build_image]
 }
 
 resource "libvirt_volume" "data" {
   count = var.nbr_nodes
   name  = "data${count.index}-${var.node_type}"
+  pool   = libvirt_pool.cluster.name
   size  = 10 * 1024 * 1024 * 1024 
 }
 
@@ -47,7 +55,7 @@ resource "libvirt_domain" "vm" {
   count = var.nbr_nodes
 
   name        = "vm-${var.node_type}-${count.index}"
-  memory      = 3072
+  memory      = 4096
   vcpu        = 2
   qemu_agent = true
 

@@ -21,7 +21,7 @@ module "control-plane" {
 module "data-plane" {
   source = "./module_nodes"
   subnet_cidr = "10.16.0.0/28"
-  nbr_nodes = 1
+  nbr_nodes = 2
   libvirt_uri = var.libvirt_uri
   node_type = "dp"
 
