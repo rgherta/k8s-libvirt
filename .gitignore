@@ -9,3 +9,6 @@ state
 *.html
 .sh
 .ini
+.vscode
+inventory.ini
+ips.json
