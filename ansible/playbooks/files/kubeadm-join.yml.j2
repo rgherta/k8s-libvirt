@@ -1,0 +1,17 @@
+---
+apiVersion: kubeadm.k8s.io/v1beta3
+kind: JoinConfiguration
+discovery:
+  bootstrapToken:
+    token: "{{ kubeadm_token }}"
+    apiServerEndpoint: "{{ control_plane_endpoint }}:6443"
+    caCertHashes: ["{{ cahash }}"]
+    timeout: 5m
+nodeRegistration:
+  name: "{{ vm_hostname }}"
+  criSocket: "unix:///var/run/crio/crio.sock"
+  imagePullPolicy: "IfNotPresent"
+  kubeletExtraArgs: 
+    cgroup-driver: "systemd"
+    resolv-conf: "/run/systemd/resolve/resolv.conf"
+---
