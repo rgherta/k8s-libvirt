@@ -1,3 +1,7 @@
+variable "local_pool_path" {
+  default = "/tmp"
+}
+
 variable "subnet_cidr" {
   description = "Default libvirt network cidr"
   default = "10.32.0.0/17"

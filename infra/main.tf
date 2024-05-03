@@ -4,6 +4,11 @@ terraform {
   }
 }
 
+# make sure you have enough space
+variable "local_pool_path" {
+  default = "/home/romh/"
+}
+
 variable "libvirt_uri" {
   default = "qemu:///session"
 }

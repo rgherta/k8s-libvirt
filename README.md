@@ -63,7 +63,7 @@ Terraform is great for provisioning resources, however when maintaining machines
 
 Ansible is a good alternative for this and other use cases. In post_run.tf we generate the inventory.ini file that contains a list of all hosts and their ips. This file together with private ssh keys are copied onto ansible folder.
 
-Kubernetes installation itself is done using ansible. To override the default make sure to edit **k8s.yml** or give as arguments inline
+Kubernetes installation itself is done using ansible. To override the default make sure to edit **k8s.yml** or give as inline arguments like below
 
 ```
 romh@fedora:infra$   cd ../ansible/
