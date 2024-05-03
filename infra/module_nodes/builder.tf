@@ -7,9 +7,8 @@ resource "null_resource" "build_image" {
         working_dir = "${path.module}"
         command = "virt-builder fedora-40 --format qcow2 --arch x86_64 --output ./img/fedora40-${var.node_type}.qcow2 --firstboot ./img/firstboot-${var.node_type}.sh --install=cri-o,cri-tools,crun,crun-vm,kubernetes,qemu-guest-agent,scap-security-guide,lvm2 --root-password password:linux --selinux-relabel"
         environment = {
-          # builds with qemu
+          # https://libguestfs.org/guestfs.3.html
           LIBGUESTFS_BACKEND = "libvirt:${var.libvirt_uri}"
-          # LIBGUESTFS_BACKEND = "direct"
         }
   }
 
