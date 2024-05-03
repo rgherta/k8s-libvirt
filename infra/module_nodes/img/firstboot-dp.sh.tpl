@@ -69,6 +69,7 @@ systemctl enable kubelet
 systemctl enable qemu-guest-agent
 
 ## Firewall rules DP 
+systemctl enable firewalld --now
 firewall-cmd --set-default-zone=internal
 firewall-cmd --permanent --add-port=10250/tcp --add-port=30000-32767/tcp
 firewall-cmd --reload
