@@ -32,7 +32,7 @@ resource "libvirt_network" "subnet" {
 resource "libvirt_pool" "cluster" {
   name = "cluster-${var.node_type}"
   type = "dir"
-  path = "${var.local_pool_path}/cluster-${var.node_type}"
+  path = pathexpand("~/pool/cluster-${var.node_type}")
 }
 
 resource "libvirt_volume" "root" {

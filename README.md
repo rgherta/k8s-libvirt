@@ -26,12 +26,13 @@ We need to install the virtualization package, mainly libvirt, libguestfs and ot
 
 ```
 romh@fedora:~$ sudo dnf group install -y --with-optional virtualization
+romh@fedora:~$ echo "export XDG_RUNTIME_DIR=/run/user/$UID" >> ~/.bashrc
 romh@fedora:~$ sudo usermod -a -G libvirt romh
 romh@fedora:~$ sudo systemctl enable libvirtd --now
 
 ```
 
-Notice we are logged in as a non-root user that belongs to sudo/wheel group but also libvirt group. Normally it is recommended to run libvirt commands as root to avoid permission issues. In the following opentofu scripts we will use the qemu session uri. 
+Notice we are logged in as a non-root user that belongs to sudo/wheel group but also libvirt group. Normally it is recommended to run libvirt commands as root to avoid permission issues. In the following opentofu scripts we will use the [session mode](https://libvirt.org/daemons.html). These changes were introduced since 2021 and include also a set of socket activated systemd services which makes debugging more difficult.
 
 The machine is ready to provision libvirtd resources. 
 
