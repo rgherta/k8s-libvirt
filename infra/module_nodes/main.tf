@@ -30,7 +30,7 @@ resource "libvirt_network" "subnet" {
 }
 
 resource "libvirt_pool" "cluster" {
-  name = "cluster"
+  name = "cluster-${var.node_type}"
   type = "dir"
   path = "/tmp/cluster_storage"
 }
