@@ -7,53 +7,53 @@ Challenge: Create the needed Terraform and Kubernetes git repositories that allo
 
 The infrastructure will be provisioned with terraform and libvirt provider. Main steps are outlined below.
 
-Build OS Image from Base OS(Fedora|Ubuntu) with all needed packages, ansible ssh pubkey etc. Kickstart files can be used to customize Anaconda installation process.  We chose to use virt-builder with firstboot bash scripts for simplicity. One important thing to consider are [openscap](https://github.com/OpenSCAP) tools for security and compliance of such locally built images.
-
-Provision 2 networks with different cidrs. Normally control and data plane should be placed in different physical networks. We try to simulate that and learn a bit more about libvirt networks. 
-
-For post-provisioning choices we have cloud-init that comes from the Ubuntu world and Ignition that comes from CoreOS. We are using here ansible via ssh for simplicity and better control. Ansible playbook includes kubeadm commands for creating the control plane and joining worker nodes. Ansible like tools are a good choice of managing fleets of VMs.
+1. Build OS Image from Base OS(Fedora|Ubuntu) with all needed packages.
+2. Provision 2 networks with different cidrs.
+3. For installing k8s and other tasks we use ansible.
 
 
 ## Install prerequisites
 
-For this specific example, commands will be executed on Fedora40Workstation. Check opentofu manual installation guide in case of issues.
+For this specific example, commands will be executed on Fedora40Workstation.
 
 ```
 romh@fedora:~$ sudo dnf install -y git opentofu ansible-core
 ```
 
-We need to install the virtualization package, mainly libvirt, libguestfs and other tools specific to each distribution. On Rocky8 the group is called "Virtualization Host".
+We need to install the virtualization package, mainly libvirt, libguestfs for image building and other tools specific to each distribution. On Rocky8 the group is called "Virtualization Host". Also make sure to create the storage pool based on disk availability. 
 
 ```
 romh@fedora:~$ sudo dnf group install -y --with-optional virtualization
-romh@fedora:~$ echo "export XDG_RUNTIME_DIR=/run/user/$UID" >> ~/.bashrc
-romh@fedora:~$ sudo usermod -a -G libvirt romh
-romh@fedora:~$ sudo systemctl enable libvirtd --now
+romh@fedora:~$ sudo usermod -a -G libvirt $USER 
+romh@fedora:~$ sudo virsh pool-define-as guest_images_dir dir --target "/images"
+romh@fedora:~$ sudo virsh pool-build guest_images_dir
+romh@fedora:~$ sudo virsh pool-start guest_images_dir
+romh@fedora:~$ sudo virsh pool-autostart guest_images_dir
 
+romh@fedora:~$ sudo semanage fcontext -a -t virt_image_t "/images(/.*)?"
+romh@fedora:~$ sudo restorecon -Rv /images
 ```
 
-Notice we are logged in as a non-root user that belongs to sudo/wheel group but also libvirt group. Normally it is recommended to run libvirt commands as root to avoid permission issues. In the following opentofu scripts we will use the [session mode](https://libvirt.org/daemons.html). These changes were introduced since 2021 and include also a set of socket activated systemd services which makes debugging more difficult.
+Notice we are logged in as a non-root user that belongs to sudo/wheel group but also libvirt group. Some [changes](https://libvirt.org/daemons.html#switching-to-modular-daemons) were introduced around 2021 including support for libvirt modular daemons and this is the reason we do not enable libvirtd.service. Process qemu-system-x86_64 will run as qemu user as defined in qemu.conf . This is an unprivileged user but it needs access to node images we will build in terraform. This is the reason for the facl command. You may choose a different way.
 
 The machine is ready to provision libvirtd resources. 
 
 
 ## Provision resources
 
-We will create control-plane with 1 VM and data-plane with 2 VMs. Make sure you review and/or edit **infra/main.tf** 
+We will create control-plane with 1 VM and data-plane with 2 VMs. Make sure you review and/or edit **infra/main.tf** before applying changes.
 
 ```
 romh@fedora:~$ git clone https://github.com/rgherta/k8s-libvirt.git 
 romh@fedora:~$ cd k8s-libvirt/infra/
-romh@fedora:infra$ tofu init
-romh@fedora:infra$ tofu apply
+romh@fedora:infra$ sudo tofu init
+romh@fedora:infra$ sudo tofu apply
 ```
 
 Notice libvirt created 2 networks in route mode with following cidrs:
 
 * 10.32.0.0/28
 * 10.16.0.0/28
-
-Since the networks have [route mode](https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/configuring_and_managing_virtualization/configuring-virtual-machine-network-connections_configuring-and-managing-virtualization#virtual-networking-network-address-translation_types-of-virtual-machine-network-connections), the corresponding interfaces virbr<N> have been attached to the firwalld libvirt-routed zone. This zone contains nftable rules that allow communication between networks and with the underlying host as well.
 
 The external interface should be attached to default zone, in fedora it is FedoraWorstation. You should be able to successfully test ping between machines and connectivity with host/internet.
 
@@ -72,10 +72,22 @@ romh@fedora:ansible$ ansible-playbook playbooks/k8s.yml -e "podCIDR=192.168.32.0
 
 ```
 
-Some important considerations:
+## Considerations
 
-* Calico requires some additional linux kernel settings and ports opened. These are detailed in boot and ansible scripts. Networking plugins should also look for a special kubeadm configmap that is present in kubeadm provisioned clusters. This config map contains information about the 
-* 
+Some of the main learning points are outlined below.
+
+* Image building can be done with Kickstart files as part of anaconda installation process or Ignition/Cloudinit files. For simplicity we use virt-builder, part of the libguestfs library, with firstboot bash scripts that should be comfortable for all users. An important step when building such images locally is to scan them with openscap tools. This is what we are doing in ansible scripts. During builder.tf we also copy the public keys to be used by ansible and a default root password is set for debugging purposes.
+
+* Libvirt can run in both system and [session mode](https://libvirt.org/daemons.html). While session mode is less privileged and preferred for small setups, it will not be able to provision multiple networks without additional manual setup. Most platforms use libvirt in *system mode* because it needs networks, host devices and interfaces, mounting and sharing filesystems etc. This is the reason tofu commands are ran as sudo.
+
+* Libvirt networks.... firewalld zones etc...
+Since the networks have [route mode](https://libvirt.org/firewall.html), the corresponding interfaces virbr<N> have been attached to the firwalld libvirt-routed zone. This zone contains nftable rules that allow communication between networks and with the underlying host as well.
+
+* Calico requires some additional linux kernel settings and bgp ports open. These are detailed in boot and ansible scripts. Normally networking plugins should  look for a special kubeadm configmap that is present in kubeadm provisioned clusters. This config map contains information about the requested cidr without the need to additionally enter it in the networking plugin configuration. This is not the case for calico it seems.
+
+* Lvm is used to create a volume group on all the nodes and this will be our default k8s storage class in order to avoid using hostpath and all the permission issues this will bring.
+
+* Ansible scans the nodes and saves openscap reports in the ./scans folder. It is a practice used more often in platforms managing images. Reports contain a list of issues and manual fixes. There is a possibility to automate the process, refer to the relevant documentation.
 
 
 ## Integrate FluxCD
@@ -120,3 +132,5 @@ https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/co
 https://libvirt.org/manpages/libvirtd.html
 
 QEMU SESSION MODE
+https://libvirt.org/daemons.html#switching-to-modular-daemons
+https://libvirt.org/drvqemu.html

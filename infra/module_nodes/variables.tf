@@ -18,6 +18,11 @@ variable "node_type" {
   default = "cp"
 }
 
+variable pool {
+  description = "storage pool"
+  default = "default"
+}
+
 
 variable "routes" {
   description = "List of network routes"
