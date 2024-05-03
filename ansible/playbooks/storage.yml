@@ -1,5 +1,0 @@
-- name: Provision LVM Volume Group
-  hosts: data-plane
-  tasks:
-    - name: Create vg
-      command: pvcreate /dev/sdb && vgcreate lvmvg /dev/sdb 
