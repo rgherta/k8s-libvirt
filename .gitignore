@@ -11,3 +11,4 @@ state
 *.ini
 .vscode
 ips.json
+.ks
