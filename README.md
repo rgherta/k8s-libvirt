@@ -25,13 +25,9 @@ We need to install the virtualization package, mainly libvirt, libguestfs for im
 ```
 romh@fedora:~$ sudo dnf group install -y --with-optional virtualization
 romh@fedora:~$ sudo usermod -a -G libvirt $USER 
-romh@fedora:~$ sudo virsh pool-define-as guest_images_dir dir --target "/images"
-romh@fedora:~$ sudo virsh pool-build guest_images_dir
-romh@fedora:~$ sudo virsh pool-start guest_images_dir
-romh@fedora:~$ sudo virsh pool-autostart guest_images_dir
+romh@fedora:~$ sudo firewall-cmd --permanent --add-masquerade
 
-romh@fedora:~$ sudo semanage fcontext -a -t virt_image_t "/images(/.*)?"
-romh@fedora:~$ sudo restorecon -Rv /images
+ENABLE MASQUERADE ON HOST
 ```
 
 Notice we are logged in as a non-root user that belongs to sudo/wheel group but also libvirt group. Some [changes](https://libvirt.org/daemons.html#switching-to-modular-daemons) were introduced around 2021 including support for libvirt modular daemons and this is the reason we do not enable libvirtd.service. Process qemu-system-x86_64 will run as qemu user as defined in qemu.conf . This is an unprivileged user but it needs access to node images we will build in terraform. This is the reason for the facl command. You may choose a different way.
@@ -55,7 +51,7 @@ Notice libvirt created 2 networks in route mode with following cidrs:
 * 10.32.0.0/28
 * 10.16.0.0/28
 
-The external interface should be attached to default zone, in fedora it is FedoraWorstation. You should be able to successfully test ping between machines and connectivity with host/internet.
+The external interface should be attached to default zone, in fedora it is FedoraWorstation. You should be successful testing ipv4/6 connectivity also with host. To allow external route make sure to enable masquerade on host default zone as shown in the above step.
 
 
 ## Run k8s
@@ -64,7 +60,7 @@ Terraform is great for provisioning resources, however when maintaining machines
 
 Ansible is a good alternative for this and other use cases. In post_run.tf we generate the inventory.ini file that contains a list of all hosts and their ips. This file together with private ssh keys are copied onto ansible folder.
 
-Kubernetes installation itself is done using ansible. To override the default make sure to edit **k8s.yml** or give as inline arguments like below
+Kubernetes installation itself is done using ansible. To override the default make sure to edit **k8s.yml** or give as inline arguments like below, Make sure ssh keys have the correct owner.
 
 ```
 romh@fedora:infra$   cd ../ansible/
@@ -119,18 +115,6 @@ resource "null_resource" "install_control_plane" {
 }
 
 
-https://github.com/dmacvicar/terraform-provider-libvirt/issues/1024
-https://github.com/dmacvicar/terraform-provider-libvirt/issues/978
 
-https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/8/html/configuring_and_managing_virtualization/configuring-virtual-machine-network-connections_configuring-and-managing-virtualization#virtual-networking-open-mode_types-of-virtual-machine-network-connections
-
-
-https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/9/html/configuring_and_managing_virtualization/managing-storage-for-virtual-machines_configuring-and-managing-virtualization#assembly_managing-virtual-machine-storage-pools-using-the-cli_managing-storage-for-virtual-machines
-
-
-
-https://libvirt.org/manpages/libvirtd.html
-
-QEMU SESSION MODE
-https://libvirt.org/daemons.html#switching-to-modular-daemons
-https://libvirt.org/drvqemu.html
+firewall-cmd --list-services !!!
+always use ksflatten

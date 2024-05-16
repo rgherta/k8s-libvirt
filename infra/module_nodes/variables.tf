@@ -18,12 +18,6 @@ variable "node_type" {
   default = "cp"
 }
 
-variable pool {
-  description = "storage pool"
-  default = "default"
-}
-
-
 variable "routes" {
   description = "List of network routes"
   default = []
@@ -33,3 +27,12 @@ variable "rebuild_images" {
   default = true
 }
 
+variable "os_variant" {
+  description = "virt-install --osinfo list"
+  default = "fedora39"
+}
+
+variable "os_url" {
+  description = "Check differences at https://docs.fedoraproject.org/en-US/fedora/latest/fedora-downloads-info/"
+  default = "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Server/x86_64/iso/Fedora-Server-dvd-x86_64-40-1.14.iso"
+}

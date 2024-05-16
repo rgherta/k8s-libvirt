@@ -36,7 +36,7 @@ resource "null_resource" "copy_ansible_files" {
         command = <<-EOT
             cp -f module_nodes/keys/* ../ansible/keys/
             cp -f inventory.ini ../ansible/
-            chmod 600 ../ansible/keys/*
+            chmod 600 ../ansible/keys/* 
         EOT
 
         interpreter = ["/bin/sh", "-c"]

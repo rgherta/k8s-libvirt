@@ -18,15 +18,3 @@ resource "local_file" "public_key" {
 }
 
 
-data "template_file" "boot_file" {
-  template = file("${path.module}/img/firstboot-${var.node_type}.sh.tpl")
-
-  vars = {
-    maintainer_public_key = trimspace(local_file.public_key.content)
-  }
-}
-
-resource "local_file" "boot_script" {
-  filename = "${path.module}/img/firstboot-${var.node_type}.sh"
-  content  = data.template_file.boot_file.rendered
-}

@@ -1,7 +1,3 @@
-provider "libvirt" {
-  uri = var.libvirt_uri
-}
-
 resource "libvirt_network" "subnet" {
   name      = "local-subnet-${var.node_type}"
   mode      = "route"
@@ -16,7 +12,6 @@ resource "libvirt_network" "subnet" {
 
   dns {
     enabled    = true
-    local_only = true
   }
 
   dynamic routes {  
@@ -26,30 +21,37 @@ resource "libvirt_network" "subnet" {
       gateway = routes.value.gateway
     }
   }
+}
+
+
+resource "libvirt_volume" "root_base" {
+  name        = "disk-${var.node_type}"
+  pool        = "guest_images"
+  source      = abspath("/guest_images/disk-image-${var.node_type}.qcow2")
+  depends_on = [ null_resource.build_image ]
 
 }
 
 resource "libvirt_volume" "root" {
   count = var.nbr_nodes
-  name        = "root${count.index}-${var.node_type}"
-  source      = "/images/fedora40-${var.node_type}.qcow2"
-  format      = "qcow2"
-  pool        = var.pool
-  depends_on = [null_resource.build_image]
+  name                  = "root${count.index}-${var.node_type}"
+  base_volume_id        = libvirt_volume.root_base.id
+  base_volume_pool      = "guest_images"
+  pool = "guest_images"
 }
 
 resource "libvirt_volume" "data" {
   count = var.nbr_nodes
   name  = "data${count.index}-${var.node_type}"
   size  = 10 * 1024 * 1024 * 1024 
-  pool        = var.pool
+  pool  = "guest_images"
 }
 
 resource "libvirt_domain" "vm" {
   count = var.nbr_nodes
 
   name        = "vm-${var.node_type}-${count.index}"
-  memory      = 4096
+  memory      = 3072
   vcpu        = 2
   qemu_agent = true
 
@@ -68,6 +70,7 @@ resource "libvirt_domain" "vm" {
     volume_id = libvirt_volume.data[count.index].id
     scsi      = "true"
   }
+
 
 }
 
