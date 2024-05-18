@@ -31,7 +31,11 @@
       with_items:
         - "mkdir -p $HOME/.kube"
         - "cp /etc/kubernetes/admin.conf $HOME/.kube/config"
-        - "chown maintainer:maintainer $HOME/.kube/config"
+        - "chown {{ansible_user}}:{{ansible_user}} $HOME/.kube/config"
+        - "#also for maintainer user"
+        - "mkdir -p /home/maintainer/.kube"
+        - "cp /etc/kubernetes/admin.conf /home/maintainer/.kube/config"
+        - "chown maintainer:maintainer /home/maintainer/.kube/config"
   
       # kubectl set env daemonset/calico-node -n kube-system CALICO_IPV4POOL_CIDR="192.168.32.0/24" doesnt seem to work
     - name: Install networking plugin calico 

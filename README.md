@@ -65,6 +65,16 @@ Kubernetes installation itself is done using ansible. To override the default ma
 ```
 romh@fedora:infra$   cd ../ansible/
 romh@fedora:ansible$ ansible-playbook playbooks/k8s.yml -e "podCIDR=192.168.32.0/24" -e "svcCIDR=172.16.32.0/24"
+romh@fedora:ansible$ ansible-playbook playbooks/fluxcd.yml
+```
+
+At this point we have the cluster running and kubernetes configured with main important deployments.
+
+## FluxCD
+
+FluxCD can be installed in various configuratinos and can be integrated in multiple ways. We opted for the kustomize variation. In the previous step we installed the custom resource definitions and the flux kustomize controller. Among the definitions we find one called 
+
+```
 
 ```
 

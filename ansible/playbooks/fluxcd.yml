@@ -1,0 +1,43 @@
+---
+- name: FluxCD
+  hosts: control_plane
+
+  tasks:
+
+    - name: Ensure install dir
+      file:
+        path: "/home/{{ansible_user}}/fluxcd"
+        state: directory
+        mode: '0755'
+
+    - name: Download Source CRDs
+      get_url:
+        url: "https://github.com/fluxcd/source-controller/releases/download/v1.3.0/source-controller.crds.yaml"
+        dest: "/home/{{ansible_user}}/fluxcd/source-controller.crds.yaml"
+        checksum: "sha256:dd84ecf67d41578e3db03b4b5023b914a56ac8769b7c7e1e6c1e20f2e11d4636"
+
+    - name: Download Source Controller
+      get_url:
+        url: "https://github.com/fluxcd/source-controller/releases/download/v1.3.0/source-controller.deployment.yaml"
+        dest: "/home/{{ansible_user}}/fluxcd/source-controller.deployment.yaml"
+        checksum: "sha256:126b4abfc062277eebe15c607e64545918268625992c7e2f0a8ea92d8506ac9f"
+
+    - name: Download Kustomize CRDs
+      get_url:
+        url: "https://github.com/fluxcd/kustomize-controller/releases/download/v1.3.0/kustomize-controller.crds.yaml"
+        dest: "/home/{{ansible_user}}/fluxcd/kustomize-controller.crds.yaml"
+        checksum: "sha256:40f17d72ef581e4f0cf378b5c374057571999c6663baf0968ad2b8d5fd878385"
+
+    - name: Download Kustomize Controller
+      get_url:
+        url: "https://github.com/fluxcd/kustomize-controller/releases/download/v1.3.0/kustomize-controller.deployment.yaml"
+        dest: "/home/{{ansible_user}}/fluxcd/kustomize-controller.deployment.yaml"
+        checksum: "sha256:8a938158ac6daeac3534c8cc261651a8697b905acff24c96a79dbe5e1bbf0dc3"
+
+    - name: Install FluxCD
+      command: "{{ item }}"
+      with_items:
+        - "kubectl apply -f /home/{{ansible_user}}/fluxcd/source-controller.crds.yaml"
+        - "kubectl apply -f /home/{{ansible_user}}/fluxcd/source-controller.deployment.yaml"
+        - "kubectl apply -f /home/{{ansible_user}}/fluxcd/kustomize-controller.crds.yaml"
+        - "kubectl apply -f /home/{{ansible_user}}/fluxcd/kustomize-controller.deployment.yaml"
