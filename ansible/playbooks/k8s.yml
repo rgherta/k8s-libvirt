@@ -113,8 +113,8 @@
   
   tasks:
 
-    - name: According to infra scripts, libvirt provisioned an extra disk /dev/vdb
+    - name: According to infra scripts, libvirt provisioned an extra disk /dev/sdb
       command: "{{ item }}"
       with_items:
-        - "pvcreate /dev/vdb"
-        - "vgcreate lvmvg /dev/vdb"
+        - "pvcreate /dev/sdb"
+        - "vgcreate lvmvg /dev/sdb"
