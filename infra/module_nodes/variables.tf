@@ -29,10 +29,16 @@ variable "rebuild_images" {
 
 variable "os_variant" {
   description = "virt-install --osinfo list"
-  default = "fedora39"
+  default = "fedora-unknown"
 }
 
 variable "os_url" {
   description = "Check differences at https://docs.fedoraproject.org/en-US/fedora/latest/fedora-downloads-info/"
-  default = "https://download.fedoraproject.org/pub/fedora/linux/releases/40/Server/x86_64/iso/Fedora-Server-dvd-x86_64-40-1.14.iso"
+  #default = "https://dl.fedoraproject.org/pub/fedora/linux/development/42/Server/x86_64/iso/Fedora-Server-dvd-x86_64-42-20250411.n.0.iso"
+  default = "https://dl.fedoraproject.org/pub/fedora/linux/development/rawhide/Server/x86_64/iso/Fedora-Server-dvd-x86_64-Rawhide-20250429.n.0.iso"
+}
+
+variable "k8s_version" {
+  description = "version to be deployed"
+  default = "1.33"
 }

@@ -5,7 +5,7 @@ terraform {
   required_providers {
     libvirt = {
       source  = "dmacvicar/libvirt"
-      version = "0.7.6"
+      version = "0.8.3"
     }
   }
 }
@@ -22,15 +22,17 @@ provider "libvirt" {
 resource "libvirt_pool" "cluster" {
   name = "guest_images"
   type = "dir"
-  path = "/guest_images"
+  target{
+    path = "/guest_images"
+  } 
 }
 
 module "control-plane" {
   source = "./module_nodes"
   subnet_cidr = "10.32.0.0/28"
   libvirt_uri = var.libvirt_uri
-  node_type = "cp"
   nbr_nodes = 1
+  node_type = "cp"
 
   #rebuild_images = false
 

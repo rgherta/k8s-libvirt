@@ -7,6 +7,7 @@
     svcCIDR: "172.16.32.0/24"
     vm_hostname: "control-plane-{{ ansible_host | replace('.', '-') }}"
     control_plane_endpoint: "{{ hostvars[groups['control_plane'][0]]['ansible_host'] }}"
+    k8s_version: "v1.33.0"
   tasks:
 
     - name: Set hostname
@@ -21,7 +22,7 @@
         group: "{{ansible_user}}"
 
     - name: Pull kubernetes images
-      command: "kubeadm config images pull"
+      command: "kubeadm config images pull --config=/home/{{ansible_user}}/kubeadm-config.yaml"
 
     - name: Run kubeadm
       command: "kubeadm init --skip-token-print=true --config=/home/{{ansible_user}}/kubeadm-config.yaml"
@@ -32,7 +33,7 @@
         - "mkdir -p $HOME/.kube"
         - "cp /etc/kubernetes/admin.conf $HOME/.kube/config"
         - "chown {{ansible_user}}:{{ansible_user}} $HOME/.kube/config"
-        - "#also for maintainer user"
+        #also for maintainer user
         - "mkdir -p /home/maintainer/.kube"
         - "cp /etc/kubernetes/admin.conf /home/maintainer/.kube/config"
         - "chown maintainer:maintainer /home/maintainer/.kube/config"

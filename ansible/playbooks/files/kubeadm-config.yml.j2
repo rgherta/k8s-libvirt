@@ -1,21 +1,26 @@
----
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4  
 kind: InitConfiguration
 nodeRegistration:
   name: "{{ vm_hostname }}"
   criSocket: "unix:///var/run/crio/crio.sock"
   imagePullPolicy: "IfNotPresent"
-  kubeletExtraArgs: 
-    cgroup-driver: "systemd"
-    resolv-conf: "/run/systemd/resolve/resolv.conf"
+  kubeletExtraArgs:
+  - name: cgroup-driver
+    value: systemd
+  - name: resolv-conf
+    value: /run/systemd/resolve/resolv.conf
 ---
-apiVersion: kubeadm.k8s.io/v1beta3
+apiVersion: kubeadm.k8s.io/v1beta4  
 kind: ClusterConfiguration
-kubernetesVersion: "1.29.4"
+kubernetesVersion: "{{ k8s_version }}"
+clusterName: kubernetes
 networking:
+  dnsDomain: cluster.local
   podSubnet: "{{ podCIDR }}"
   serviceSubnet: "{{ svcCIDR }}"
 controllerManager:
   extraArgs:
-    allocate-node-cidrs: "true"
----
+  - name: allocate-node-cidrs
+    value: "true"
+  - name: cluster-cidr
+    value: "{{ podCIDR }}"

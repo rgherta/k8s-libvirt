@@ -1,7 +1,4 @@
-# K8s with libvirt and fluxcd
-
-Challenge: Create the needed Terraform and Kubernetes git repositories that allows you to tear up fully working kubernetes cluster with just editing a file and running 1-2 commands. The cluster should run Fluxcd to apply yaml files from a github repository ... [full task](https://github.com/c-wire/hiring-challenges/tree/main/devops-challenge)
-
+# K8s with libvirt 
 
 ## Describe approach
 
@@ -65,29 +62,21 @@ Kubernetes installation itself is done using ansible. To override the default ma
 ```
 romh@fedora:infra$   cd ../ansible/
 romh@fedora:ansible$ ansible-playbook playbooks/k8s.yml -e "podCIDR=192.168.32.0/24" -e "svcCIDR=172.16.32.0/24"
-romh@fedora:ansible$ ansible-playbook playbooks/fluxcd.yml
 ```
 
 At this point we have the cluster running and kubernetes configured with main important deployments.
 
-## FluxCD
-
-FluxCD can be installed in various configuratinos and can be integrated in multiple ways. We opted for the kustomize variation. In the previous step we installed the custom resource definitions and the flux kustomize controller. Among the definitions we find one called 
-
-```
-
-```
 
 ## Considerations
 
 Some of the main learning points are outlined below.
 
-* Image building can be done with Kickstart files as part of anaconda installation process or Ignition/Cloudinit files. For simplicity we use virt-builder, part of the libguestfs library, with firstboot bash scripts that should be comfortable for all users. An important step when building such images locally is to scan them with openscap tools. This is what we are doing in ansible scripts. During builder.tf we also copy the public keys to be used by ansible and a default root password is set for debugging purposes.
+* Image building can be done with Kickstart files as part of anaconda installation process or Ignition/Cloudinit files. An important step when building such images locally is to scan them with openscap tools. This is what we are doing in ansible scripts. During builder.tf we also copy the public keys to be used by ansible and a default root password is set for debugging purposes.
 
 * Libvirt can run in both system and [session mode](https://libvirt.org/daemons.html). While session mode is less privileged and preferred for small setups, it will not be able to provision multiple networks without additional manual setup. Most platforms use libvirt in *system mode* because it needs networks, host devices and interfaces, mounting and sharing filesystems etc. This is the reason tofu commands are ran as sudo.
 
 * Libvirt networks.... firewalld zones etc...
-Since the networks have [route mode](https://libvirt.org/firewall.html), the corresponding interfaces virbr<N> have been attached to the firwalld libvirt-routed zone. This zone contains nftable rules that allow communication between networks and with the underlying host as well.
+Since the networks have [route mode](https://libvirt.org/firewall.html), the corresponding interfaces virbr<N> have been attached to the firewalld libvirt-routed zone. This zone contains nftable rules that allow communication between networks and with the underlying host as well.
 
 * Calico requires some additional linux kernel settings and bgp ports open. These are detailed in boot and ansible scripts. Normally networking plugins should  look for a special kubeadm configmap that is present in kubeadm provisioned clusters. This config map contains information about the requested cidr without the need to additionally enter it in the networking plugin configuration. This is not the case for calico it seems.
 
@@ -96,34 +85,10 @@ Since the networks have [route mode](https://libvirt.org/firewall.html), the cor
 * Ansible scans the nodes and saves openscap reports in the ./scans folder. It is a practice used more often in platforms managing images. Reports contain a list of issues and manual fixes. There is a possibility to automate the process, refer to the relevant documentation.
 
 
-## Integrate FluxCD
-
 
 ## Conclusion
 
 Libvirt is ok for a small development cluster as close as possible to bare metal.
-
-
-
-resource "null_resource" "install_control_plane" {
-  provisioner "local-exec" {
-        command = "ssh -i /path/to/private_key.pem maintainer@[2001:0db8:85a3:0000:0000:8a2e:0370:7334]"
-  }
-  depends_on = [module.control-plane, module.data-plane]
-}
-
-
-
-{
-  "control_plane": [
-    "10.32.0.3"
-  ],
-  "data_plane": [
-    "10.16.0.9",
-    "10.16.0.2"
-  ]
-}
-
 
 
 firewall-cmd --list-services !!!

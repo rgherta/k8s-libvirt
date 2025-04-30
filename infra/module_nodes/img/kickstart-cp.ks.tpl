@@ -74,7 +74,7 @@ EOF
 sysctl --system
 
 # Install runtime
-dnf install -y cri-o cri-tools crun crun-vm scap-security-guide lvm2
+dnf install -y cri-o1.32 cri-tools${k8s_version} crun crun-vm scap-security-guide lvm2
 rm -rf /etc/cni/net.d/*  
 
 
@@ -88,16 +88,6 @@ tee -a /etc/crio/crio.conf.d/90-crun <<CRUN
 runtime_path = "/usr/bin/crun"
 runtime_type = "oci"
 CRUN
-
-# settings for usernamespace containers - main openshift security advantage
-echo "containers:1000000:1048576" | tee -a /etc/subuid
-echo "containers:1000000:1048576" | tee -a /etc/subgid
-
-tee -a /etc/crio/crio.conf.d/91-userns <<USERNS 
-[crio.runtime.workloads.userns]
-activation_annotation = "io.kubernetes.cri-o.userns-mode"
-allowed_annotations = ["io.kubernetes.cri-o.userns-mode"]
-USERNS
 
 # Crun-rm a virtualized container runtime for untrusted workload
 tee -a /etc/crio/crio.conf.d/92-crunvm <<CRUNVM 
@@ -116,7 +106,7 @@ zramctl --reset /dev/zram0
 dnf -y remove zram-generator-defaults
 
 # Install k8s packages and libvirt agent
-dnf install -y kubernetes-kubeadm kubernetes-client
+dnf install -y kubernetes${k8s_version}-kubeadm kubernetes${k8s_version}-client
 systemctl enable kubelet
 systemctl enable qemu-guest-agent --now
 
